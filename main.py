@@ -11,14 +11,15 @@ max_depth = 20
 
 
 def read_board(file_name):
-    file_path = os.path.join("files", file_name)
+    file_path = os.path.join("413", file_name)
     with open(file_path, "r") as start_board:
         w, k = map(int, start_board.readline().split())
         board = [list(map(int, start_board.readline().split())) for _ in range(k)]
     return board, w, k
 
 def save_solution(solution_file, path):
-    with open(solution_file, "w") as file:
+    file_path = os.path.join("solution", solution_file)
+    with open(file_path, "w") as file:
         if path:
             file.write(f"{len(path)}\n")
             file.write("".join(path) + "\n")
@@ -27,7 +28,8 @@ def save_solution(solution_file, path):
 
 
 def save_info(info_file, path, visited, expanded, max_reached_depth, duration_ms):
-    with open(info_file, "w") as file:
+    file_path = os.path.join("stats", info_file)
+    with open(file_path, "w") as file:
         if path:
             file.write(f"{len(path)}\n")
             file.write(f"{visited}\n")
@@ -212,6 +214,8 @@ def debug_final_state(board, path):
         print("Oczekiwana plansza rozwiązana:")
         for row in solved_board:
             print(row)
+
+
 def main():
     parser = argparse.ArgumentParser(description="15 Puzzle Solver")
     parser.add_argument("strategy", choices=["dfs","bfs"], help="Strategy to use")
