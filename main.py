@@ -112,10 +112,30 @@ def DFS(board):
 
     return []
 
+def BFS(board):
+    root_node = Node(board, None, 0, None)
+    queue = [root_node]
+    visited = {board}
+
+    while queue:
+        node = queue.pop(0)
+
+        if node.current_board.is_solved():
+            return node.path()
+
+        if node.depth < max_depth:
+            for move, new_board in node.current_board.moves_to_make():
+                if new_board not in visited:
+                    visited.add(new_board)
+                    new_node = Node(new_board, node, node.depth + 1, move)
+                    queue.append(new_node)
+
+    return []
+
 
 def main():
     parser = argparse.ArgumentParser(description="15 Puzzle Solver")
-    parser.add_argument("strategy", choices=["dfs"], help="Strategy to use")
+    parser.add_argument("strategy", choices=["dfs","bfs"], help="Strategy to use")
     parser.add_argument("board", help="File with the board to solve")
     parser.add_argument("solution", help="File to save the solution")
     args = parser.parse_args()
@@ -131,6 +151,15 @@ def main():
 
     if args.strategy == "dfs":
         path = DFS(board)
+        if path:
+            print("Ruchy do wykonania:", path)
+        else:
+            print("Nie znaleziono rozwiązania w maksymalnej głębokości")
+
+        save_solution(args.solution, path)
+
+    if args.strategy == "bfs":
+        path = BFS(board)
         if path:
             print("Ruchy do wykonania:", path)
         else:
