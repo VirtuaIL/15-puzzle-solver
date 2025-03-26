@@ -61,6 +61,21 @@ class Board:
 
     def __hash__(self):
         return hash(tuple(tuple(row) for row in self.board))
+    
+    def print_board(self):
+        print("-" * (self.w * 4 + 1))
+        for row in self.board:
+            row_str = "|"
+            for num in row:
+                if num == 0:
+                    row_str += "   |"
+                elif num < 10:
+                    row_str += f" {num} |"
+                else:
+                    row_str += f" {num}|"
+            print(row_str)
+            print("-" * (self.w * 4 + 1))
+        print()
 
     def moves_to_make(self, last_move=None):
         x0, y0 = self.find_zero()
@@ -132,41 +147,88 @@ def BFS(board):
 
     return []
 
-
+def debug_final_state(board, path):
+    """Funkcja pomocnicza do debugowania - pokazuje końcowy stan układanki po wykonaniu wszystkich ruchów"""
+    if not path:
+        print("Brak ścieżki rozwiązania.")
+        return
+    
+    print(f"\nDebug: Wykonywanie {len(path)} ruchów: {''.join(path)}")
+    print("Stan początkowy:")
+    board.print_board()
+    
+    # Wykonaj wszystkie ruchy i pokaż końcowy stan
+    current_board = board
+    for i, move in enumerate(path):
+        found_move = False
+        for m, new_board in current_board.moves_to_make():
+            if m == move:
+                current_board = new_board
+                found_move = True
+                break
+                
+        if not found_move:
+            print(f"BŁĄD: Nie można wykonać ruchu {move} na obecnej planszy!")
+            print("Aktualna plansza:")
+            current_board.print_board()
+            print("Dostępne ruchy:", [m for m, _ in current_board.moves_to_make()])
+            return
+            
+        print(f"Po ruchu {i+1} ({move}):")
+        current_board.print_board()
+    
+    print("Końcowy stan po wykonaniu wszystkich ruchów:")
+    current_board.print_board()
+    print(f"Czy rozwiązane: {current_board.is_solved()}")
+    
+    # Sprawdź, czy końcowa plansza jest rzeczywiście rozwiązana
+    if not current_board.is_solved():
+        print("UWAGA: Końcowa plansza nie jest rozwiązana!")
+        print("Oczekiwana plansza rozwiązana:")
+        for row in solved_board:
+            print(row)
 def main():
     parser = argparse.ArgumentParser(description="15 Puzzle Solver")
     parser.add_argument("strategy", choices=["dfs","bfs"], help="Strategy to use")
     parser.add_argument("board", help="File with the board to solve")
     parser.add_argument("solution", help="File to save the solution")
+    parser.add_argument("--debug", action="store_true", help="Enable debug output")
     args = parser.parse_args()
 
-    start_board, w, k = read_board(args.board)
-    board = Board(start_board, w, k)
+    # Sprawdź czy plik istnieje
+    if not os.path.exists(os.path.join("files", args.board)):
+        print(f"Błąd: Plik {args.board} nie istnieje w katalogu 'files'")
+        return
 
-    print("Początkowa plansza:")
-    for row in board.board:
-        print(row)
+    try:
+        start_board, w, k = read_board(args.board)
+        board = Board(start_board, w, k)
 
-    print("Puste pole na pozycji:", board.find_zero())
+        print("Początkowa plansza:")
+        for row in board.board:
+            print(row)
 
-    if args.strategy == "dfs":
-        path = DFS(board)
+        print("Puste pole na pozycji:", board.find_zero())
+
+        path = []
+        if args.strategy == "dfs":
+            path = DFS(board)
+        elif args.strategy == "bfs":
+            path = BFS(board)
+        
         if path:
             print("Ruchy do wykonania:", path)
         else:
             print("Nie znaleziono rozwiązania w maksymalnej głębokości")
 
         save_solution(args.solution, path)
-
-    if args.strategy == "bfs":
-        path = BFS(board)
-        if path:
-            print("Ruchy do wykonania:", path)
-        else:
-            print("Nie znaleziono rozwiązania w maksymalnej głębokości")
-
-        save_solution(args.solution, path)
-
-
+        
+        # Dodanie debugowania końcowego stanu - tylko gdy flaga jest ustawiona
+        if args.debug:
+            debug_final_state(board, path)
+    except Exception as e:
+        print(f"Wystąpił błąd: {e}")
+        import traceback
+        traceback.print_exc()
 if __name__ == "__main__":
     main()
