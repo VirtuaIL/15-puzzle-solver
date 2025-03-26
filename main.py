@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 
 solved_board = [[1, 2, 3, 4],
                 [5, 6, 7, 8],
@@ -21,6 +22,18 @@ def save_solution(solution_file, path):
         if path:
             file.write(f"{len(path)}\n")
             file.write("".join(path) + "\n")
+        else:
+            file.write("-1\n")
+
+
+def save_info(info_file, path, visited, expanded, max_reached_depth, duration_ms):
+    with open(info_file, "w") as file:
+        if path:
+            file.write(f"{len(path)}\n")
+            file.write(f"{visited}\n")
+            file.write(f"{expanded}\n")
+            file.write(f"{max_reached_depth}\n")
+            file.write(f"{duration_ms:.3f}\n")
         else:
             file.write("-1\n")
 
@@ -61,7 +74,7 @@ class Board:
 
     def __hash__(self):
         return hash(tuple(tuple(row) for row in self.board))
-    
+
     def print_board(self):
         print("-" * (self.w * 4 + 1))
         for row in self.board:
@@ -107,16 +120,19 @@ class Board:
 
 
 def DFS(board):
-
     root_node = Node(board, None, 0, None)
     stack = [(root_node, None)]
     visited = {board}
+    max_reached_depth = 0
+    expanded_nodes = 0  # licznik przetworzonych
 
     while stack:
         node, last_move = stack.pop()
+        max_reached_depth = max(max_reached_depth, node.depth)
+        expanded_nodes += 1
 
         if node.current_board.is_solved():
-            return node.path()
+            return node.path(), len(visited), max_reached_depth, expanded_nodes
 
         if node.depth < max_depth:
             for move, new_board in node.current_board.moves_to_make(last_move):
@@ -125,18 +141,24 @@ def DFS(board):
                     new_node = Node(new_board, node, node.depth + 1, move)
                     stack.append((new_node, move))
 
-    return []
+    return [], len(visited), max_reached_depth, expanded_nodes
+
+
 
 def BFS(board):
     root_node = Node(board, None, 0, None)
     queue = [root_node]
     visited = {board}
+    max_reached_depth = 0
+    expanded_nodes = 0  # licznik przetworzonych węzłów
 
     while queue:
         node = queue.pop(0)
+        max_reached_depth = max(max_reached_depth, node.depth)
+        expanded_nodes += 1
 
         if node.current_board.is_solved():
-            return node.path()
+            return node.path(), len(visited), max_reached_depth, expanded_nodes
 
         if node.depth < max_depth:
             for move, new_board in node.current_board.moves_to_make():
@@ -145,18 +167,21 @@ def BFS(board):
                     new_node = Node(new_board, node, node.depth + 1, move)
                     queue.append(new_node)
 
-    return []
+    return [], len(visited), max_reached_depth, expanded_nodes
+
+
+
 
 def debug_final_state(board, path):
     """Funkcja pomocnicza do debugowania - pokazuje końcowy stan układanki po wykonaniu wszystkich ruchów"""
     if not path:
         print("Brak ścieżki rozwiązania.")
         return
-    
+
     print(f"\nDebug: Wykonywanie {len(path)} ruchów: {''.join(path)}")
     print("Stan początkowy:")
     board.print_board()
-    
+
     # Wykonaj wszystkie ruchy i pokaż końcowy stan
     current_board = board
     for i, move in enumerate(path):
@@ -166,21 +191,21 @@ def debug_final_state(board, path):
                 current_board = new_board
                 found_move = True
                 break
-                
+
         if not found_move:
             print(f"BŁĄD: Nie można wykonać ruchu {move} na obecnej planszy!")
             print("Aktualna plansza:")
             current_board.print_board()
             print("Dostępne ruchy:", [m for m, _ in current_board.moves_to_make()])
             return
-            
+
         print(f"Po ruchu {i+1} ({move}):")
         current_board.print_board()
-    
+
     print("Końcowy stan po wykonaniu wszystkich ruchów:")
     current_board.print_board()
     print(f"Czy rozwiązane: {current_board.is_solved()}")
-    
+
     # Sprawdź, czy końcowa plansza jest rzeczywiście rozwiązana
     if not current_board.is_solved():
         print("UWAGA: Końcowa plansza nie jest rozwiązana!")
@@ -192,43 +217,40 @@ def main():
     parser.add_argument("strategy", choices=["dfs","bfs"], help="Strategy to use")
     parser.add_argument("board", help="File with the board to solve")
     parser.add_argument("solution", help="File to save the solution")
+    parser.add_argument("stats", help="File to save the stats")
     parser.add_argument("--debug", action="store_true", help="Enable debug output")
     args = parser.parse_args()
 
-    # Sprawdź czy plik istnieje
-    if not os.path.exists(os.path.join("files", args.board)):
-        print(f"Błąd: Plik {args.board} nie istnieje w katalogu 'files'")
-        return
+    start_board, w, k = read_board(args.board)
+    board = Board(start_board, w, k)
 
-    try:
-        start_board, w, k = read_board(args.board)
-        board = Board(start_board, w, k)
+    print("Początkowa plansza:")
+    for row in board.board:
+        print(row)
 
-        print("Początkowa plansza:")
-        for row in board.board:
-            print(row)
+    print("Puste pole na pozycji:", board.find_zero())
 
-        print("Puste pole na pozycji:", board.find_zero())
+    start_time = time.time()
 
-        path = []
-        if args.strategy == "dfs":
-            path = DFS(board)
-        elif args.strategy == "bfs":
-            path = BFS(board)
-        
-        if path:
-            print("Ruchy do wykonania:", path)
-        else:
-            print("Nie znaleziono rozwiązania w maksymalnej głębokości")
+    # Wybór strategii
+    if args.strategy == "dfs":
+        path, visited_count, max_reached_depth, expanded = DFS(board)
+    elif args.strategy == "bfs":
+        path, visited_count, max_reached_depth, expanded = BFS(board)
 
-        save_solution(args.solution, path)
-        
-        # Dodanie debugowania końcowego stanu - tylko gdy flaga jest ustawiona
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000, 3)
+
+    if path:
+        print("Ruchy do wykonania:", path)
         if args.debug:
             debug_final_state(board, path)
-    except Exception as e:
-        print(f"Wystąpił błąd: {e}")
-        import traceback
-        traceback.print_exc()
+    else:
+        print("Nie znaleziono rozwiązania w maksymalnej głębokości")
+
+    save_solution(args.solution, path)
+    save_info(args.stats, path, str(visited_count), str(expanded), str(max_reached_depth), duration_ms)
+
+
 if __name__ == "__main__":
     main()
