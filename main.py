@@ -77,22 +77,22 @@ class Board:
     def __hash__(self):
         return hash(tuple(tuple(row) for row in self.board))
 
-    def print_board(self):
-        print("-" * (self.w * 4 + 1))
-        for row in self.board:
-            row_str = "|"
-            for num in row:
-                if num == 0:
-                    row_str += "   |"
-                elif num < 10:
-                    row_str += f" {num} |"
-                else:
-                    row_str += f" {num}|"
-            print(row_str)
-            print("-" * (self.w * 4 + 1))
-        print()
+    # def print_board(self):
+    #     print("-" * (self.w * 4 + 1))
+    #     for row in self.board:
+    #         row_str = "|"
+    #         for num in row:
+    #             if num == 0:
+    #                 row_str += "   |"
+    #             elif num < 10:
+    #                 row_str += f" {num} |"
+    #             else:
+    #                 row_str += f" {num}|"
+    #         print(row_str)
+    #         print("-" * (self.w * 4 + 1))
+    #     print()
 
-    def moves_to_make(self, last_move=None):
+    def moves_to_make(self, last_move=None, order=None):
         x0, y0 = self.find_zero()
         moves = []
 
@@ -110,9 +110,12 @@ class Board:
             "R": "L"
         }
 
-        for move, (x0_new, y0_new) in direction.items():
+
+        for move in order:
             if last_move == useless_direction.get(move):
                 continue
+            x0_new, y0_new = direction[move]
+            # print(x0_new, y0_new)
             if 0 <= x0_new < self.k and 0 <= y0_new < self.w:  # Sprawdzanie granic planszy
                 new_board = [row.copy() for row in self.board]
                 new_board[x0][y0], new_board[x0_new][y0_new] = new_board[x0_new][y0_new], new_board[x0][y0]
@@ -121,7 +124,7 @@ class Board:
         return moves
 
 
-def DFS(board):
+def DFS(board, order):
     root_node = Node(board, None, 0, None)
     stack = [(root_node, None)]
     visited = {board}
@@ -137,7 +140,7 @@ def DFS(board):
             return node.path(), len(visited), max_reached_depth, expanded_nodes
 
         if node.depth < max_depth:
-            for move, new_board in node.current_board.moves_to_make(last_move):
+            for move, new_board in node.current_board.moves_to_make(last_move,order):
                 if new_board not in visited:
                     visited.add(new_board)
                     new_node = Node(new_board, node, node.depth + 1, move)
@@ -147,7 +150,7 @@ def DFS(board):
 
 
 
-def BFS(board):
+def BFS(board,order):
     root_node = Node(board, None, 0, None)
     queue = [root_node]
     visited = {board}
@@ -163,7 +166,7 @@ def BFS(board):
             return node.path(), len(visited), max_reached_depth, expanded_nodes
 
         if node.depth < max_depth:
-            for move, new_board in node.current_board.moves_to_make():
+            for move, new_board in node.current_board.moves_to_make(None,order):
                 if new_board not in visited:
                     visited.add(new_board)
                     new_node = Node(new_board, node, node.depth + 1, move)
@@ -174,60 +177,67 @@ def BFS(board):
 
 
 
-def debug_final_state(board, path):
-    """Funkcja pomocnicza do debugowania - pokazuje końcowy stan układanki po wykonaniu wszystkich ruchów"""
-    if not path:
-        print("Brak ścieżki rozwiązania.")
-        return
-
-    print(f"\nDebug: Wykonywanie {len(path)} ruchów: {''.join(path)}")
-    print("Stan początkowy:")
-    board.print_board()
-
-    # Wykonaj wszystkie ruchy i pokaż końcowy stan
-    current_board = board
-    for i, move in enumerate(path):
-        found_move = False
-        for m, new_board in current_board.moves_to_make():
-            if m == move:
-                current_board = new_board
-                found_move = True
-                break
-
-        if not found_move:
-            print(f"BŁĄD: Nie można wykonać ruchu {move} na obecnej planszy!")
-            print("Aktualna plansza:")
-            current_board.print_board()
-            print("Dostępne ruchy:", [m for m, _ in current_board.moves_to_make()])
-            return
-
-        print(f"Po ruchu {i+1} ({move}):")
-        current_board.print_board()
-
-    print("Końcowy stan po wykonaniu wszystkich ruchów:")
-    current_board.print_board()
-    print(f"Czy rozwiązane: {current_board.is_solved()}")
-
-    # Sprawdź, czy końcowa plansza jest rzeczywiście rozwiązana
-    if not current_board.is_solved():
-        print("UWAGA: Końcowa plansza nie jest rozwiązana!")
-        print("Oczekiwana plansza rozwiązana:")
-        for row in solved_board:
-            print(row)
+# def debug_final_state(board, path):
+#     """Funkcja pomocnicza do debugowania - pokazuje końcowy stan układanki po wykonaniu wszystkich ruchów"""
+#     if not path:
+#         print("Brak ścieżki rozwiązania.")
+#         return
+#
+#     print(f"\nDebug: Wykonywanie {len(path)} ruchów: {''.join(path)}")
+#     print("Stan początkowy:")
+#     board.print_board()
+#
+#     # Wykonaj wszystkie ruchy i pokaż końcowy stan
+#     current_board = board
+#     for i, move in enumerate(path):
+#         found_move = False
+#         for m, new_board in current_board.moves_to_make():
+#             if m == move:
+#                 current_board = new_board
+#                 found_move = True
+#                 break
+#
+#         if not found_move:
+#             print(f"BŁĄD: Nie można wykonać ruchu {move} na obecnej planszy!")
+#             print("Aktualna plansza:")
+#             current_board.print_board()
+#             print("Dostępne ruchy:", [m for m, _ in current_board.moves_to_make()])
+#             return
+#
+#         print(f"Po ruchu {i+1} ({move}):")
+#         current_board.print_board()
+#
+#     print("Końcowy stan po wykonaniu wszystkich ruchów:")
+#     current_board.print_board()
+#     print(f"Czy rozwiązane: {current_board.is_solved()}")
+#
+#     # Sprawdź, czy końcowa plansza jest rzeczywiście rozwiązana
+#     if not current_board.is_solved():
+#         print("UWAGA: Końcowa plansza nie jest rozwiązana!")
+#         print("Oczekiwana plansza rozwiązana:")
+#         for row in solved_board:
+#             print(row)
 
 
 def main():
     parser = argparse.ArgumentParser(description="15 Puzzle Solver")
     parser.add_argument("strategy", choices=["dfs","bfs"], help="Strategy to use")
+    parser.add_argument("order", choices=["UDLR", "UDRL", "ULDR", "ULRD", "URLD", "URDL",
+                                                        "DULR", "DURL", "DLUR", "DLRU", "DRUL", "DRLU",
+                                                        "LUDR", "LURD", "LDUR", "LDRU", "LRUD", "LRDU",
+                                                        "RUDL", "RULD", "RDUL", "RDLU", "RLUD", "RLDU"
+                                                        ], help="Order of the search")
     parser.add_argument("board", help="File with the board to solve")
     parser.add_argument("solution", help="File to save the solution")
     parser.add_argument("stats", help="File to save the stats")
-    parser.add_argument("--debug", action="store_true", help="Enable debug output")
+    # parser.add_argument("--debug", action="store_true", help="Enable debug output")
     args = parser.parse_args()
 
     start_board, w, k = read_board(args.board)
     board = Board(start_board, w, k)
 
+
+    print("Szukam w kolejnosci:", args.order)
     print("Początkowa plansza:")
     for row in board.board:
         print(row)
@@ -238,17 +248,17 @@ def main():
 
     # Wybór strategii
     if args.strategy == "dfs":
-        path, visited_count, max_reached_depth, expanded = DFS(board)
+        path, visited_count, max_reached_depth, expanded = DFS(board,args.order)
     elif args.strategy == "bfs":
-        path, visited_count, max_reached_depth, expanded = BFS(board)
+        path, visited_count, max_reached_depth, expanded = BFS(board,args.order)
 
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000, 3)
 
     if path:
         print("Ruchy do wykonania:", path)
-        if args.debug:
-            debug_final_state(board, path)
+        # if args.debug:
+        #     debug_final_state(board, path)
     else:
         print("Nie znaleziono rozwiązania w maksymalnej głębokości")
 
