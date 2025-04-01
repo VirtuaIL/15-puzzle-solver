@@ -19,12 +19,12 @@ for board_filename in board_files:
 
     args = [
         "python", "main.py",
-        "bfs",
-        "UDLR",
+        "astr",
+        "hamm",
         board_filename,
         # os.path.join(boards_folder, board_filename),  # pełna ścieżka do planszy
-        f"{base_name}_bfs_udlr_sol.txt",
-        f"{base_name}_bfs_udlr_stats.txt"
+        f"{base_name}_astr_hamm_sol.txt",
+        f"{base_name}_astr_hamm_stats.txt"
     ]
 
     result = subprocess.run(args, text=True)
