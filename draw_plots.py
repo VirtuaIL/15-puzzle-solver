@@ -64,7 +64,7 @@ def draw_metric(index):
         axs[1, 1].bar(x - 0.4 + i * width, y, width, label=label)
     axs[1, 1].set_title("DFS")
     axs[1, 1].set_xlabel("Głębokość")
-    axs[1, 1].legend(ncol=4)
+    # axs[1, 1].legend(ncol=4)
     axs[1, 1].grid(True)
 
     if index in [1, 2, 4]:  # odwiedzone, przetworzone, czas
