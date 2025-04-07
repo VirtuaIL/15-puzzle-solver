@@ -137,7 +137,8 @@ class Board:
         return moves
 
 def DFS(board, order):
-    root_node = Node(board, None, 0, None)
+    # root_node = Node(board, None, 0, None)
+    root_node = Node(current_board=board, parent=None, depth=0, move=None)
     stack = [(root_node, None)]
     visited = {board: 0}  # stan i głębokość
     max_reached_depth = 0
@@ -157,13 +158,14 @@ def DFS(board, order):
         if node.depth < max_depth:
             possible_moves = node.current_board.moves_to_make(last_move=last_move, order=order)
 
-            for move_and_board in possible_moves:
+            for move_and_board in reversed(possible_moves):
                 move, new_board = move_and_board
                 new_depth = node.depth + 1
 
                 if new_board not in visited or new_depth < visited[new_board]:
                     visited[new_board] = new_depth
-                    new_node = Node(new_board, node, new_depth, move)
+                    # new_node = Node(new_board, node, new_depth, move)
+                    new_node = Node(current_board=new_board, parent=node, depth=new_depth, move=move)
                     stack.append((new_node, move))
 
     return [], len(visited), max_reached_depth, expanded_nodes
@@ -196,7 +198,8 @@ def BFS(board,order):
 
                 if new_board not in visited:
                     visited.add(new_board)
-                    new_node = Node(new_board, node, node.depth + 1, move)
+                    # new_node = Node(new_board, node, node.depth + 1, move)
+                    new_node = Node(current_board=new_board, parent=node, depth=node.depth + 1, move=move)
                     queue.append(new_node)
 
     return [], len(visited), max_reached_depth, expanded_nodes
